@@ -1,6 +1,9 @@
 package com.demorestapi.teste.controller;
 
 import com.demorestapi.teste.model.Usuario;
+import com.demorestapi.teste.repository.UsuarioRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -10,10 +13,12 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/usuarios")
 public class UsuarioController {
-    private List<Usuario> usuarios = new ArrayList<>();
+    private final UsuarioRepository usuarioRepository;
 
-    public UsuarioController() {
-        usuarios.addAll(List.of(
+    public UsuarioController(UsuarioRepository usuarioRepository) {
+        this.usuarioRepository = usuarioRepository;
+
+        usuarioRepository.saveAll(List.of(
                 new Usuario("Thiago"),
                 new Usuario("Rafael"),
                 new Usuario("Alexandre")
@@ -22,42 +27,29 @@ public class UsuarioController {
 
     @GetMapping
     Iterable<Usuario> getUsuarios(){
-        return usuarios;
+        return usuarioRepository.findAll();
     }
 
     @GetMapping("/{id}")
     Optional<Usuario> getUsuarioById(@PathVariable String id){
-        for (Usuario u: usuarios) {
-            if (u.getId().equals(id)) {
-                return Optional.of(u);
-            }
-        }
-
-        return Optional.empty();
+        return usuarioRepository.findById(id);
     }
 
     @PostMapping
     Usuario postUsuario(@RequestBody Usuario usuario) {
-        usuarios.add(usuario);
-        return usuario;
+        return usuarioRepository.save(usuario);
     }
 
     @PutMapping("/{id}")
-    Usuario putUsuario(@PathVariable String id, @RequestBody Usuario usuario) {
-        int usuarioIndex = -1;
-
-        for (Usuario u: usuarios) {
-            if (u.getId().equals(id)) {
-                usuarioIndex = usuarios.indexOf(u);
-                usuarios.set(usuarioIndex, usuario);
-            }
-        }
-
-        return (usuarioIndex == -1) ? postUsuario(usuario) : usuario;
+    ResponseEntity<Usuario> putUsuario(@PathVariable String id,
+                                       @RequestBody Usuario usuario) {
+        return (usuarioRepository.existsById(id))
+                ? new ResponseEntity<>(usuarioRepository.save(usuario), HttpStatus.OK)
+                : new ResponseEntity<>(usuarioRepository.save(usuario), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
     void deleteUsuario(@PathVariable String id) {
-        usuarios.removeIf(u -> u.getId().equals(id));
+        usuarioRepository.deleteById(id);
     }
 }
